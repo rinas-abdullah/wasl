@@ -1,0 +1,9 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+ortools>=9.10,<10
+simpy>=4.1,<5
+scikit-learn>=1.5,<2
+pandas>=2.2,<3
+numpy>=2.0,<3
+joblib>=1.4,<2
+pydantic>=2.7,<3

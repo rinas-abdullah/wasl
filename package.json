@@ -1,0 +1,26 @@
+{
+  "name": "wasl",
+  "private": true,
+  "version": "0.1.0",
+  "description": "WASL | وَصل — Logistics Digital Twin & Decision Intelligence Platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @wasl/api",
+    "dev:web": "npm run dev -w @wasl/web",
+    "build": "npm run build -w @wasl/api && npm run build -w @wasl/web",
+    "typecheck": "npm run typecheck -w @wasl/shared && npm run typecheck -w @wasl/api && npm run typecheck -w @wasl/web",
+    "test": "npm run test -w @wasl/shared && npm run test -w @wasl/api",
+    "db:migrate": "npm run db:migrate -w @wasl/api",
+    "db:seed": "npm run db:seed -w @wasl/api",
+    "e2e": "playwright test -c tests/e2e/playwright.config.ts"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "devDependencies": {
+    "typescript": "~5.9"
+  }
+}

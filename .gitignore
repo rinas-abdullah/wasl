@@ -1,0 +1,14 @@
+node_modules
+dist
+.next
+.env
+.env.local
+coverage
+__pycache__
+*.pyc
+.pytest_cache
+services/intelligence/.venv
+test-results
+playwright-report
+*.tsbuildinfo
+next-env.d.ts
