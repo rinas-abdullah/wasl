@@ -157,7 +157,7 @@ export function OutcomeBanner({ outcome, summary, summaryAr }: { outcome: string
 }
 
 export function TruckLink({ id, code }: { id: string; code: string }) {
-  return <Link href={`/trucks/${id}`} className="num font-semibold text-navy-700 hover:text-teal-700 hover:underline">{code}</Link>;
+  return <Link href={`/trucks/${id}`} className="num whitespace-nowrap font-semibold text-navy-700 hover:text-teal-700 hover:underline">{code}</Link>;
 }
 
 export function DockCard({ dock, onClick }: { dock: AnyRec; onClick?: () => void }) {

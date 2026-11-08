@@ -331,7 +331,7 @@ export async function listTrucks(actor: Actor, q: z.infer<typeof truckListQuery>
     .innerJoin(schema.shipments, eq(schema.shipments.id, T.shipmentId))
     .innerJoin(schema.carriers, eq(schema.carriers.id, T.carrierId))
     .leftJoin(schema.docks, eq(schema.docks.id, T.assignedDockId))
-    .leftJoin(schema.appointments, and(eq(schema.appointments.truckId, T.id), inArray(schema.appointments.status, ["REQUESTED", "PROPOSED", "CONFIRMED"])));
+    .leftJoin(schema.appointments, and(eq(schema.appointments.truckId, T.id), inArray(schema.appointments.status, ["REQUESTED", "PROPOSED", "CONFIRMED", "COMPLETED"])));
   const [rows, [{ total }]] = await Promise.all([
     base
       .where(where)
@@ -343,7 +343,7 @@ export async function listTrucks(actor: Actor, q: z.infer<typeof truckListQuery>
       .from(T)
       .innerJoin(schema.shipments, eq(schema.shipments.id, T.shipmentId))
       .innerJoin(schema.carriers, eq(schema.carriers.id, T.carrierId))
-      .leftJoin(schema.appointments, and(eq(schema.appointments.truckId, T.id), inArray(schema.appointments.status, ["REQUESTED", "PROPOSED", "CONFIRMED"])))
+      .leftJoin(schema.appointments, and(eq(schema.appointments.truckId, T.id), inArray(schema.appointments.status, ["REQUESTED", "PROPOSED", "CONFIRMED", "COMPLETED"])))
       .where(where),
   ]);
   return {
