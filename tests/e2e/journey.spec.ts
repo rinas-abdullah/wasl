@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const PASSWORD = process.env.DEMO_PASSWORD ?? "Wasl@Demo2026";
 
 async function login(page: Page, user: string) {
+  await page.goto("about:blank"); // leave the app first so its 401 handler cannot race this navigation
   await page.context().clearCookies();
   await page.context().addCookies([{ name: "wasl_locale", value: "en", domain: "localhost", path: "/" }]);
   await page.goto("/login");
