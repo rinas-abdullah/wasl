@@ -23,7 +23,7 @@ export const NAV: NavGroup[] = [
     ar: "ذكاء القرار", en: "Decision intelligence",
     items: [
       { href: "/readiness", ar: "محرك الجاهزية", en: "Readiness engine", icon: ShieldCheck, perm: "readiness:evaluate" },
-      { href: "/optimization", ar: "مركز التحسين", en: "Optimization center", icon: GitBranch, perm: "trucks:read" },
+      { href: "/optimization", ar: "مركز التحسين", en: "Optimization center", icon: GitBranch, perm: "optimization:read" },
       { href: "/simulation", ar: "مختبر المحاكاة", en: "Simulation lab", icon: FlaskConical, perm: "simulation:read" },
       { href: "/decisions", ar: "مركز القرارات", en: "Decision center", icon: Scale, perm: "dashboard:read" },
       { href: "/models", ar: "نماذج الذكاء الاصطناعي", en: "AI models", icon: Brain, perm: "models:read" },

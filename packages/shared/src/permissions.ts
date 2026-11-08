@@ -20,6 +20,7 @@ export const PERMISSIONS = [
   "readiness:evaluate",
   "release:execute",
   "release:override",
+  "optimization:read",
   "optimization:run",
   "optimization:approve",
   "simulation:run",
@@ -43,6 +44,7 @@ export type Permission = (typeof PERMISSIONS)[number];
 
 const READ_ONLY: Permission[] = [
   "dashboard:read",
+  "optimization:read",
   "trucks:read",
   "docks:read",
   "resources:read",
@@ -94,7 +96,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "handover:act",
     "handover:inspect",
   ],
-  CARRIER_OPERATOR: ["dashboard:read", "trucks:read", "trucks:create", "trucks:update", "trucks:cancel", "notifications:read", "handover:read"],
+  CARRIER_OPERATOR: ["trucks:read", "trucks:create", "trucks:update", "trucks:cancel", "notifications:read", "handover:read"],
   DRIVER: ["trucks:read", "notifications:read", "handover:read"],
   AUDITOR: [...READ_ONLY, "users:read"],
 };

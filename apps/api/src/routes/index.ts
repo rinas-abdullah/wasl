@@ -245,8 +245,8 @@ export function registerRoutes(app: FastifyInstance) {
     reply.code(202);
     return opt.enqueueOptimization(actor, { ...body, trigger: "MANUAL" });
   });
-  route(app, { method: "GET", url: "/api/optimization/runs", summary: "Optimisation run history", tags: ["optimization"], permission: "trucks:read" }, async ({ actor }) => opt.listRuns(actor));
-  route(app, { method: "GET", url: "/api/optimization/runs/:id", summary: "Run detail with candidates and reasons", tags: ["optimization"], permission: "trucks:read", params: idParam }, async ({ actor, params }) => opt.getRun(actor, params.id));
+  route(app, { method: "GET", url: "/api/optimization/runs", summary: "Optimisation run history", tags: ["optimization"], permission: "optimization:read" }, async ({ actor }) => opt.listRuns(actor));
+  route(app, { method: "GET", url: "/api/optimization/runs/:id", summary: "Run detail with candidates and reasons", tags: ["optimization"], permission: "optimization:read", params: idParam }, async ({ actor, params }) => opt.getRun(actor, params.id));
   route(app, { method: "POST", url: "/api/optimization/runs/:id/approve", summary: "Approve and commit a plan (re-validated against current state)", tags: ["optimization"], permission: "optimization:approve", params: idParam, body: planDecisionSchema, idempotency: "optional" }, async ({ actor, params, body }) => opt.approveRun(actor, params.id, body.reason));
   route(app, { method: "POST", url: "/api/optimization/runs/:id/reject", summary: "Reject a plan", tags: ["optimization"], permission: "optimization:approve", params: idParam, body: planDecisionSchema }, async ({ actor, params, body }) => opt.rejectRun(actor, params.id, body.reason));
 
