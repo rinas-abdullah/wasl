@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,31 +13,44 @@ import { Button, Field, Input } from "@/components/ui";
 const schema = z.object({ email: z.email(), password: z.string().min(1), remember: z.boolean() });
 type Form = z.infer<typeof schema>;
 
-const DEMO = [
-  { email: "ops@demo.wasl.sa", role: "OPERATIONS_MANAGER" },
-  { email: "dock@demo.wasl.sa", role: "DOCK_SUPERVISOR" },
-  { email: "quality@demo.wasl.sa", role: "QUALITY_OFFICER" },
-  { email: "admin@demo.wasl.sa", role: "ORGANIZATION_ADMIN" },
-  { email: "carrier@demo.wasl.sa", role: "CARRIER_OPERATOR" },
-  { email: "driver@demo.wasl.sa", role: "DRIVER" },
-  { email: "auditor@demo.wasl.sa", role: "AUDITOR" },
-];
+const ROLE_ORDER = ["OPERATIONS_MANAGER", "DOCK_SUPERVISOR", "QUALITY_OFFICER", "ORGANIZATION_ADMIN", "CARRIER_OPERATOR", "DRIVER", "AUDITOR"];
 
 function LoginInner() {
   const t = useT();
   const locale = useLocale();
   const params = useSearchParams();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, setValue, formState } = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "", remember: false } });
+  const [demo, setDemo] = useState<{ email: string; role: string }[]>([]);
+  const [demoBusy, setDemoBusy] = useState<string | null>(null);
+  useEffect(() => {
+    api.get<{ email: string; role: string }[]>("/api/auth/demo-accounts").then((d) => setDemo([...d].sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role)))).catch(() => setDemo([]));
+  }, []);
+  const { register, handleSubmit, formState } = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "", remember: false } });
+
+  async function afterLogin() {
+    const next = params.get("next");
+      const me = await api.get<{ permissions: string[] }>("/api/auth/me");
+      const fallback = me.permissions.includes("dashboard:read") ? "/overview" : "/trucks";
+      window.location.href = next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
+  }
+
+  async function demoLogin(email: string) {
+    setError(null);
+    setDemoBusy(email);
+    try {
+      await api.post("/api/auth/demo-login", { email });
+      await afterLogin();
+    } catch {
+      setError(t("تعذر الدخول بالحساب التجريبي. حاول مرة أخرى.", "Could not sign in with the demo account. Try again."));
+      setDemoBusy(null);
+    }
+  }
 
   async function onSubmit(v: Form) {
     setError(null);
     try {
       await api.post("/api/auth/login", v);
-      const next = params.get("next");
-      const me = await api.get<{ permissions: string[] }>("/api/auth/me");
-      const fallback = me.permissions.includes("dashboard:read") ? "/overview" : "/trucks";
-      window.location.href = next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
+      await afterLogin();
     } catch (e) {
       if (e instanceof ApiError && e.status === 429) setError(t("محاولات كثيرة. انتظر دقيقة ثم أعد المحاولة.", "Too many attempts. Wait a minute and try again."));
       else setError(t("البريد الإلكتروني أو كلمة المرور غير صحيحة.", "Invalid email or password."));
@@ -48,10 +61,7 @@ function LoginInner() {
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       <section className="relative hidden flex-col justify-between overflow-hidden bg-navy-950 p-12 text-white lg:flex">
         <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
-        <div className="relative inline-flex w-fit rounded-2xl bg-white px-5 py-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/wasl-logo-trim.png" alt="وَصل | WASL" className="h-12 w-auto" />
-        </div>
+        <p className="relative text-sm font-semibold tracking-[0.25em] text-teal-500">WASL · وَصل</p>
         <div className="relative max-w-lg">
           <p className="text-sm font-medium text-teal-500">{t("منظومة ذكاء تشغيلي وتوأم رقمي", "Operational decision intelligence & digital twin")}</p>
           <h1 className="mt-3 text-3xl font-semibold leading-snug">{t("وجود موعد مؤكد للشاحنة لا يعني بالضرورة أن المنشأة جاهزة لاستقبالها.", "A confirmed appointment does not mean the facility is ready to receive the truck.")}</h1>
@@ -72,7 +82,7 @@ function LoginInner() {
         </div>
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 pb-12">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/wasl-logo-trim.png" alt="وَصل | WASL" className="mb-8 h-11 w-auto self-start lg:hidden" />
+          <img src="/wasl-logo-trim.png" alt="وَصل | WASL" className="mb-10 h-14 w-auto self-start" />
           <h2 className="text-xl font-semibold text-navy-900">{t("تسجيل الدخول", "Sign in")}</h2>
           <p className="mt-1 text-[13px] text-muted">{t("ادخل إلى مركز القيادة التشغيلي لمنشأتك.", "Access your facility's operational command center.")}</p>
           <form onSubmit={handleSubmit(onSubmit)} className="mt-7 space-y-4" noValidate>
@@ -90,17 +100,20 @@ function LoginInner() {
             <Button type="submit" size="lg" className="w-full" loading={formState.isSubmitting}><LogIn />{t("دخول", "Sign in")}</Button>
           </form>
 
-          <div className="mt-8 rounded-xl border border-dashed border-teal-500/60 bg-teal-50/60 p-4">
-            <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-teal-700"><ShieldCheck className="size-4" />{t("دخول المحكّمين — حسابات تجريبية", "Judges — demo accounts")}</p>
-            <p className="mt-1 text-[11.5px] leading-relaxed text-ink-2">{t("كلمة المرور موضحة في دليل التجربة (DEMO_GUIDE.md). اختر دورًا لتعبئة البريد:", "The password is listed in DEMO_GUIDE.md. Pick a role to fill the email:")}</p>
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {DEMO.map((d) => (
-                <button key={d.email} type="button" onClick={() => setValue("email", d.email, { shouldValidate: true })} className="rounded-md border border-line bg-surface px-2 py-1 text-[11.5px] text-ink-2 hover:border-teal-500">
-                  {label("role", d.role, locale)}
-                </button>
-              ))}
+          {demo.length ? (
+            <div className="mt-8">
+              <div className="flex items-center gap-3 text-[11.5px] text-muted"><span className="h-px flex-1 bg-line" />{t("أو جرّب المنصة بحساب تجريبي", "or try the platform with a demo account")}<span className="h-px flex-1 bg-line" /></div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {demo.map((d) => (
+                  <button key={d.email} type="button" disabled={!!demoBusy} onClick={() => demoLogin(d.email)} className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-start text-[12px] text-ink-2 transition-colors hover:border-teal-500 hover:bg-teal-50 disabled:opacity-60">
+                    <span className="truncate">{label("role", d.role, locale)}</span>
+                    {demoBusy === d.email ? <span className="size-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" /> : <ShieldCheck className="size-3.5 shrink-0 text-teal-600" />}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-muted">{t("دخول بنقرة واحدة لحسابات تجريبية ببيانات اصطناعية — متاح في وضع التجربة فقط.", "One-click sign-in to demo accounts with synthetic data — available in demo mode only.")}</p>
             </div>
-          </div>
+          ) : null}
         </div>
       </section>
     </div>

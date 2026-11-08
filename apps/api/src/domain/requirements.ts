@@ -66,11 +66,23 @@ export function teamHasSkills(team: Team, skills: readonly string[]) {
   return skills.every((s) => team.skills.includes(s));
 }
 
-export function teamShiftWindow(team: Team, day: Date, tz: string) {
-  const start = localTimeOn(day, team.shiftStart, tz);
-  let end = localTimeOn(day, team.shiftEnd, tz);
-  if (end <= start) end = new Date(end.getTime() + 86400_000);
-  return { start, end };
+/**
+ * The shift window relevant to instant `at`: the one containing it, otherwise the next one.
+ * Handles overnight shifts (end <= start ⇒ ends the following day), including instants after
+ * midnight that belong to a shift which started the previous evening.
+ */
+export function teamShiftWindow(team: Team, at: Date, tz: string) {
+  const windowFor = (day: Date) => {
+    const start = localTimeOn(day, team.shiftStart, tz);
+    let end = localTimeOn(day, team.shiftEnd, tz);
+    if (end <= start) end = new Date(end.getTime() + 86400_000);
+    return { start, end };
+  };
+  const today = windowFor(at);
+  const yesterday = windowFor(new Date(at.getTime() - 86400_000));
+  if (at >= yesterday.start && at < yesterday.end) return yesterday;
+  if (at < today.end) return today;
+  return windowFor(new Date(at.getTime() + 86400_000));
 }
 
 /**

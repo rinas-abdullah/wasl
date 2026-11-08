@@ -59,6 +59,17 @@ describe("authentication", () => {
     expect(c).toMatch(/HttpOnly/);
     expect(c).toMatch(/SameSite=Lax/);
   });
+  it("one-click demo sign-in works only for seeded demo accounts", async () => {
+    const list = (await app.inject({ method: "GET", url: "/api/auth/demo-accounts" })).json();
+    expect(list.map((x: { email: string }) => x.email)).toContain("ops@demo.wasl.sa");
+    const ok = await app.inject({ method: "POST", url: "/api/auth/demo-login", payload: { email: "ops@demo.wasl.sa" } });
+    expect(ok.statusCode).toBe(200);
+    expect(String(ok.headers["set-cookie"])).toMatch(/HttpOnly/);
+    const [u] = await db.insert(schema.users).values({ email: "real-user@example.test", name: "Real", passwordHash: "x", isDemo: false }).returning();
+    const bad = await app.inject({ method: "POST", url: "/api/auth/demo-login", payload: { email: "real-user@example.test" } });
+    expect(bad.statusCode).toBe(401);
+    await db.delete(schema.users).where(eq(schema.users.id, u.id));
+  });
   it("rejects mutations without a CSRF token", async () => {
     const s = await login("ops");
     const r = await app.inject({ method: "POST", url: "/api/optimization/runs", payload: {}, headers: { cookie: s.cookie } });

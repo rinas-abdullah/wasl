@@ -53,8 +53,9 @@ export async function seedFacility(tx: Tx, refs: SeedRefs, nowIn = new Date()) {
     const off = tzOffsetMinutes(d, tz);
     return ((Math.floor(d.getTime() / 60_000) + off) % 1440 + 1440) % 1440;
   };
+  // Wall-clock shift boundaries relative to the seed time; may cross midnight (overnight shifts are supported).
   const wall = (offsetMin: number) => {
-    const m = Math.min(1439, Math.max(0, localMin(now) + offsetMin));
+    const m = (((localMin(now) + offsetMin) % 1440) + 1440) % 1440;
     return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
   };
   const teams = await tx

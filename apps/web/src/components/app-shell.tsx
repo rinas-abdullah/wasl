@@ -68,10 +68,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebar = (
     <nav aria-label={t("التنقل الرئيسي", "Main navigation")} className="flex h-full flex-col">
       <div className="px-4 pb-4 pt-5">
-        <Link href="/overview" className="block rounded-xl bg-white px-3 py-2.5" aria-label="WASL">
+        <Link href="/overview" className="block px-2 py-1" aria-label="WASL">
           {/* Approved logo used as-is (only surrounding whitespace trimmed). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/wasl-logo-trim.png" alt="وَصل | WASL" className="mx-auto h-9 w-auto" />
+          <img src="/wasl-logo-trim.png" alt="وَصل | WASL" className="h-10 w-auto" />
         </Link>
       </div>
       <div className="scroll-thin flex-1 space-y-5 overflow-y-auto px-3 pb-4">
@@ -80,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           if (!items.length) return null;
           return (
             <div key={g.en}>
-              <p className="px-3 pb-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-[#7b93a8]">{locale === "ar" ? g.ar : g.en}</p>
+              <p className="px-3 pb-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-muted">{locale === "ar" ? g.ar : g.en}</p>
               <ul className="space-y-0.5">
                 {items.map((i) => {
                   const active = current?.href === i.href;
@@ -91,13 +91,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         href={i.href}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#b7c7d6] transition-colors hover:bg-white/5 hover:text-white",
-                          active && "bg-teal-500/15 font-medium text-white shadow-[inset_3px_0_0_var(--color-teal-500)] rtl:shadow-[inset_-3px_0_0_var(--color-teal-500)]",
+                          "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-ink-2 transition-colors hover:bg-canvas hover:text-ink",
+                          active && "bg-teal-50 font-semibold text-navy-900 shadow-[inset_3px_0_0_var(--color-teal-500)] rtl:shadow-[inset_-3px_0_0_var(--color-teal-500)]",
                         )}
                       >
-                        <Icon className={cn("size-[17px]", active ? "text-teal-500" : "text-[#7b93a8]")} />
+                        <Icon className={cn("size-[17px]", active ? "text-teal-600" : "text-muted")} />
                         {locale === "ar" ? i.ar : i.en}
-                        {i.href === "/notifications" && (unread.data?.unread ?? 0) > 0 ? <span className="num ms-auto rounded-full bg-teal-500 px-1.5 text-[10.5px] font-semibold text-navy-950">{unread.data!.unread}</span> : null}
+                        {i.href === "/notifications" && (unread.data?.unread ?? 0) > 0 ? <span className="num ms-auto rounded-full bg-teal-500 px-1.5 text-[10.5px] font-semibold text-white">{unread.data!.unread}</span> : null}
                       </Link>
                     </li>
                   );
@@ -107,24 +107,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </div>
-      <div className="border-t border-white/10 p-4 text-[11.5px] leading-relaxed text-[#9fb4c6]">
+      <div className="border-t border-line p-4 text-[11.5px] leading-relaxed text-ink-2">
         <div className="flex items-center gap-2">
-          <span className={cn("size-2 rounded-full", connected ? "bg-teal-500 shadow-[0_0_0_3px_rgb(24_189_181/0.25)]" : "bg-[#7b93a8]")} />
+          <span className={cn("size-2 rounded-full", connected ? "bg-teal-500 shadow-[0_0_0_3px_rgb(24_189_181/0.25)]" : "bg-muted")} />
           {connected ? t("متصل بالتحديثات المباشرة", "Live updates connected") : t("إعادة الاتصال…", "Reconnecting…")}
         </div>
-        <p className="mt-1.5 text-[#7b93a8]">{t("بيئة نموذج أولي — بيانات اصطناعية، حساسات افتراضية، لا يوجد مستودع حقيقي متصل.", "Prototype environment — synthetic data, virtual sensors, no real warehouse connected.")}</p>
+        <p className="mt-1.5 text-muted">{t("بيئة نموذج أولي — بيانات اصطناعية، حساسات افتراضية، لا يوجد مستودع حقيقي متصل.", "Prototype environment — synthetic data, virtual sensors, no real warehouse connected.")}</p>
       </div>
     </nav>
   );
 
   return (
     <div className="flex min-h-screen">
-      <aside className="no-print sticky top-0 hidden h-screen w-[248px] shrink-0 bg-navy-950 lg:block">{sidebar}</aside>
+      <aside className="no-print sticky top-0 hidden h-screen w-[248px] shrink-0 border-e border-line bg-surface lg:block">{sidebar}</aside>
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-navy-950/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 start-0 w-[260px] bg-navy-950">
-            <button className="absolute end-2 top-2 rounded p-1 text-white" onClick={() => setMobileOpen(false)} aria-label={t("إغلاق القائمة", "Close menu")}><X className="size-5" /></button>
+          <aside className="absolute inset-y-0 start-0 w-[260px] bg-surface">
+            <button className="absolute end-2 top-2 rounded p-1 text-ink-2" onClick={() => setMobileOpen(false)} aria-label={t("إغلاق القائمة", "Close menu")}><X className="size-5" /></button>
             {sidebar}
           </aside>
         </div>

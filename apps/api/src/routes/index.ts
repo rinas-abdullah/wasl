@@ -74,6 +74,31 @@ export function registerRoutes(app: FastifyInstance) {
     return { ok: true, csrfToken };
   });
 
+  /* One-click demo sign-in: only in DEMO_MODE, only for seeded demo accounts of demo organisations. */
+  route(app, { method: "GET", url: "/api/auth/demo-accounts", summary: "Demo accounts available for one-click sign-in (empty unless DEMO_MODE)", tags: ["auth"], permission: null, public: true }, async () => {
+    if (!config.demoMode) return [];
+    return db
+      .select({ email: schema.users.email, name: schema.users.name, role: schema.memberships.role })
+      .from(schema.users)
+      .innerJoin(schema.memberships, eq(schema.memberships.userId, schema.users.id))
+      .innerJoin(schema.organizations, eq(schema.organizations.id, schema.memberships.orgId))
+      .where(and(eq(schema.users.isDemo, true), eq(schema.users.isActive, true), eq(schema.organizations.isDemo, true), eq(schema.organizations.slug, "wasl-demo")))
+      .orderBy(schema.memberships.role);
+  });
+  route(app, { method: "POST", url: "/api/auth/demo-login", summary: "Sign in as a seeded demo account without a password (DEMO_MODE only)", tags: ["auth"], permission: null, public: true, body: z.object({ email: z.email() }), rateLimit: { max: config.rateLimitLogin, timeWindow: "1 minute" } }, async ({ body, req, reply }) => {
+    if (!config.demoMode) throw notFound("Route");
+    const [row] = await db
+      .select({ user: schema.users, membership: schema.memberships })
+      .from(schema.users)
+      .innerJoin(schema.memberships, eq(schema.memberships.userId, schema.users.id))
+      .innerJoin(schema.organizations, eq(schema.organizations.id, schema.memberships.orgId))
+      .where(and(eq(schema.users.email, body.email.toLowerCase()), eq(schema.users.isDemo, true), eq(schema.users.isActive, true), eq(schema.organizations.isDemo, true)));
+    if (!row) throw unauthorized("Not a demo account");
+    const { csrfToken, membership } = await createSession(req, reply, row.user.id, false);
+    await recordEvent(db, { orgId: membership.orgId, facilityId: null, eventType: "AUTH_LOGIN", entityType: "user", entityId: row.user.id, entityLabel: row.user.email, actor: { userId: row.user.id, name: row.user.name, role: membership.role }, source: "USER", payload: { ip: req.ip, method: "demo-one-click" } });
+    return { ok: true, csrfToken };
+  });
+
   route(app, { method: "POST", url: "/api/auth/logout", summary: "Sign out", tags: ["auth"], permission: null }, async ({ req, reply }) => {
     await destroySession(req, reply);
     return { ok: true };

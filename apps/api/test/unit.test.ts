@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateReadiness } from "../src/domain/readiness/engine";
-import { dockCompatibility, earliestFreeStart, requiredEquipment, requiredSkills } from "../src/domain/requirements";
+import { dockCompatibility, earliestFreeStart, requiredEquipment, requiredSkills, teamShiftWindow } from "../src/domain/requirements";
 import { detectEvents } from "../src/domain/sensors/detect";
 import { generateSeries, resolveThresholds } from "../src/domain/sensors/generator";
 import { toCsv } from "../src/domain/analytics";
@@ -98,6 +98,25 @@ describe("resource availability", () => {
     const b = planningTableEstimate({ cargoType: "GENERAL", palletCount: 20, handlingMethod: "FORKLIFT_PALLET", vehicleType: "RIGID", teamSize: 4, dockHasLeveler: true, inspectionRequired: false });
     expect(a.source).toBe("PLANNING_TABLE");
     expect(b.minutes).toBeGreaterThan(a.minutes);
+  });
+});
+
+describe("overnight shifts", () => {
+  const team = snapshot().teams[0];
+  const night = { ...team, shiftStart: "20:00", shiftEnd: "04:00" };
+  it("an instant after midnight belongs to the shift that started the previous evening", () => {
+    const at = new Date("2026-11-08T22:30:00Z"); // 01:30 Riyadh on the 9th
+    const w = teamShiftWindow(night, at, "Asia/Riyadh");
+    expect(w.start.toISOString()).toBe("2026-11-08T17:00:00.000Z"); // 20:00 on the 8th
+    expect(w.end.toISOString()).toBe("2026-11-09T01:00:00.000Z"); // 04:00 on the 9th
+  });
+  it("before the evening start returns the upcoming shift", () => {
+    const w = teamShiftWindow(night, new Date("2026-11-08T12:00:00Z"), "Asia/Riyadh"); // 15:00 local
+    expect(w.start.toISOString()).toBe("2026-11-08T17:00:00.000Z");
+  });
+  it("day shifts are unchanged", () => {
+    const w = teamShiftWindow(team, NOW, "Asia/Riyadh");
+    expect(w.start.toISOString()).toBe("2026-11-08T03:00:00.000Z");
   });
 });
 
