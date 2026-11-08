@@ -38,12 +38,18 @@ export interface FacilitySnapshot {
 export async function loadSnapshot(tx: DbOrTx, facilityId: string, at = new Date()): Promise<FacilitySnapshot> {
   const [facility] = await tx.select().from(schema.facilities).where(eq(schema.facilities.id, facilityId));
   if (!facility) throw notFound("Facility");
-  const [docks, gates, teams, equipment, truckRows, reservations, openQualityReviews, qo] = await Promise.all([
-    tx.select().from(schema.docks).where(eq(schema.docks.facilityId, facilityId)).orderBy(schema.docks.position),
-    tx.select().from(schema.gates).where(eq(schema.gates.facilityId, facilityId)).orderBy(schema.gates.code),
-    tx.select().from(schema.workforceTeams).where(eq(schema.workforceTeams.facilityId, facilityId)).orderBy(schema.workforceTeams.code),
-    tx.select().from(schema.equipment).where(eq(schema.equipment.facilityId, facilityId)).orderBy(schema.equipment.code),
-    tx
+  // Sequential on purpose: a transaction holds one connection, so parallel queries would only queue.
+  const run = async <T extends readonly unknown[]>(qs: { [K in keyof T]: () => Promise<T[K]> }): Promise<T> => {
+    const out: unknown[] = [];
+    for (const q of qs) out.push(await q());
+    return out as unknown as T;
+  };
+  const [docks, gates, teams, equipment, truckRows, reservations, openQualityReviews, qo] = await run<[Dock[], Gate[], Team[], Equipment[], { truck: Truck; shipment: Shipment; appointment: Appointment | null; carrierName: string }[], Reservation[], QualityReview[], { n: number }[]]>([
+    () => tx.select().from(schema.docks).where(eq(schema.docks.facilityId, facilityId)).orderBy(schema.docks.position),
+    () => tx.select().from(schema.gates).where(eq(schema.gates.facilityId, facilityId)).orderBy(schema.gates.code),
+    () => tx.select().from(schema.workforceTeams).where(eq(schema.workforceTeams.facilityId, facilityId)).orderBy(schema.workforceTeams.code),
+    () => tx.select().from(schema.equipment).where(eq(schema.equipment.facilityId, facilityId)).orderBy(schema.equipment.code),
+    () => tx
       .select({ truck: schema.trucks, shipment: schema.shipments, appointment: schema.appointments, carrierName: schema.carriers.name })
       .from(schema.trucks)
       .innerJoin(schema.shipments, eq(schema.shipments.id, schema.trucks.shipmentId))
@@ -54,7 +60,7 @@ export async function loadSnapshot(tx: DbOrTx, facilityId: string, at = new Date
       )
       .where(and(eq(schema.trucks.facilityId, facilityId), isNull(schema.trucks.deletedAt), notInArray(schema.trucks.status, ["DEPARTED", "CANCELLED", "NO_SHOW"])))
       .orderBy(schema.trucks.code),
-    tx
+    () => tx
       .select()
       .from(schema.resourceReservations)
       .where(
@@ -64,11 +70,11 @@ export async function loadSnapshot(tx: DbOrTx, facilityId: string, at = new Date
           gt(schema.resourceReservations.endAt, new Date(at.getTime() - 3600_000)),
         ),
       ),
-    tx
+    () => tx
       .select()
       .from(schema.qualityReviews)
       .where(and(eq(schema.qualityReviews.facilityId, facilityId), inArray(schema.qualityReviews.status, ["REVIEW_REQUIRED", "UNDER_REVIEW", "ESCALATED", "HOLD"]))),
-    tx
+    () => tx
       .select({ n: sql<number>`count(*)::int` })
       .from(schema.memberships)
       .where(and(eq(schema.memberships.orgId, facility.orgId), eq(schema.memberships.role, "QUALITY_OFFICER"))),

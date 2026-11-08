@@ -112,7 +112,7 @@ function ScheduleInner() {
           <CardHeader title={view === "day" ? f.date(day) : `${f.date(day)} – ${f.date(new Date(to.getTime() - 1))}`} subtitle={t("بتوقيت الرياض", "Riyadh time")} />
           {docks.isLoading || appts.isLoading ? <LoadingBlock rows={6} /> : appts.error ? <ErrorState error={appts.error} /> : view === "day" ? (
             <div className="scroll-thin overflow-x-auto p-4" dir="ltr">
-              <div className="min-w-[1100px]">
+              <div className="min-w-[1500px]">
                 <div className="relative ms-24 h-6 text-[10.5px] text-muted">
                   {hours.map((h) => <span key={h} className="num absolute -translate-x-1/2" style={{ left: `${((h - DAY_START_H) / (DAY_END_H - DAY_START_H)) * 100}%` }}>{String(h % 24).padStart(2, "0")}:00</span>)}
                 </div>
