@@ -15,5 +15,6 @@ RUN python -m wasl_intel.train --version 2026.11.08-1
 RUN useradd -r -u 10001 wasl && chown -R wasl /app
 USER wasl
 EXPOSE 8000
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" || exit 1
-CMD ["uvicorn", "wasl_intel.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:' + __import__('os').environ.get('PORT','8000') + '/health')" || exit 1
+ENV PORT=8000 WEB_CONCURRENCY=2
+CMD ["sh", "-c", "exec uvicorn wasl_intel.app:app --host 0.0.0.0 --port ${PORT} --workers ${WEB_CONCURRENCY}"]

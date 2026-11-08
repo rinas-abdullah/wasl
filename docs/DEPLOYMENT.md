@@ -13,7 +13,17 @@ Variables: `WEB_PORT`, `POSTGRES_PASSWORD`, `DEMO_PASSWORD`, `APP_PUBLIC_URL` (u
 
 Behind a TLS-intercepting proxy, put the proxy's root CA (`*.crt`) into `infrastructure/certs/` before building (used only at build time, git-ignored).
 
-## Production options (not deployed)
+## Render (one-click Blueprint)
+
+[`render.yaml`](../../render.yaml) at the repository root defines the whole stack: managed Postgres 16, `wasl-intelligence`, `wasl-api`, `wasl-web` (Docker, built from `./wasl`). Open
+<https://render.com/deploy?repo=https://github.com/rinas-abdullah/project-files/tree/claude/sleepy-brown-qbv0oi>, connect GitHub if asked, and click **Apply**. The web URL will be `https://wasl-web.onrender.com` (or a suffixed variant if that name is taken).
+
+* Services reach each other over their public HTTPS hosts; the intelligence service only answers requests carrying the generated `INTELLIGENCE_API_KEY`.
+* The web app proxies `/api/*` to `API_INTERNAL_URL` **at runtime** (`apps/web/src/app/api/[...path]/route.ts`), so the same image works on any host.
+* Free plans sleep after ~15 minutes idle (first request then takes about a minute, and queued jobs wait for the API to wake) and the free database expires after 30 days. Switch plans in `render.yaml` for a permanent demo.
+* `DEMO_PASSWORD` defaults to the documented demo password; change it in the Render dashboard if the demo should not be open.
+
+## Other production options
 
 No public deployment was made from this environment. A suitable topology:
 

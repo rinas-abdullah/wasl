@@ -15,7 +15,7 @@ export async function intel<T>(path: string, body: unknown, opts: { timeoutMs?: 
     try {
       const res = await fetch(`${config.intelligenceUrl}${path}`, {
         method,
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...(config.intelligenceKey ? { "x-internal-key": config.intelligenceKey } : {}) },
         body: method === "POST" ? JSON.stringify(body) : undefined,
         signal: ctrl.signal,
       });

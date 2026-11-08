@@ -1,11 +1,14 @@
 """FastAPI entrypoint for the WASL intelligence service (internal network only)."""
 from __future__ import annotations
 
+import hmac
 import logging
+import os
 import time
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from . import ml
@@ -16,6 +19,17 @@ logging.basicConfig(level=logging.INFO, format='{"ts":"%(asctime)s","level":"%(l
 log = logging.getLogger("wasl.intel")
 
 app = FastAPI(title="WASL Intelligence Service", version="0.1.0", description="OR-Tools optimisation, SimPy simulation and scikit-learn models. Internal service called by the WASL API.")
+
+
+INTERNAL_KEY = os.environ.get("INTELLIGENCE_API_KEY", "")
+
+
+@app.middleware("http")
+async def require_internal_key(request, call_next):
+    """When INTELLIGENCE_API_KEY is set, only callers presenting it (the WASL API) are served. /health stays open."""
+    if INTERNAL_KEY and request.url.path != "/health" and not hmac.compare_digest(request.headers.get("x-internal-key", ""), INTERNAL_KEY):
+        return JSONResponse({"detail": "forbidden"}, status_code=403)
+    return await call_next(request)
 
 
 @app.on_event("startup")
