@@ -1,0 +1,52 @@
+# WASL | وَصل — full stack for local evaluation.
+#   cd wasl && docker compose -f infrastructure/docker-compose.yml up --build
+# Then open http://localhost:${WEB_PORT:-3000}
+name: wasl
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: wasl
+      POSTGRES_USER: wasl
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wasl-local-only}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wasl -d wasl"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  intelligence:
+    build: { context: .., dockerfile: services/intelligence/Dockerfile }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: { context: .., dockerfile: apps/api/Dockerfile }
+    environment:
+      DATABASE_URL: postgres://wasl:${POSTGRES_PASSWORD:-wasl-local-only}@postgres:5432/wasl
+      INTELLIGENCE_URL: http://intelligence:8000
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
+      DEMO_MODE: "true"
+      SEED_DEMO_ON_START: "true"
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-Wasl@Demo2026}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      LOG_LEVEL: info
+    depends_on:
+      postgres: { condition: service_healthy }
+      intelligence: { condition: service_healthy }
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args: { API_INTERNAL_URL: http://api:4000 }
+    ports: ["${WEB_PORT:-3000}:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  pgdata:

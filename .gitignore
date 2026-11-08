@@ -14,3 +14,4 @@ playwright-report
 next-env.d.ts
 test-results/
 playwright-report/
+infrastructure/certs/*.crt

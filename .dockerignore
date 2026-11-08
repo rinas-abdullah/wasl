@@ -1,0 +1,13 @@
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/__pycache__
+**/models
+**/test-results
+**/playwright-report
+.git
+**/models
+**/tests/__pycache__
