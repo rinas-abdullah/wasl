@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-sans-arabic/300.css";
+@import "@fontsource/ibm-plex-sans-arabic/400.css";
+@import "@fontsource/ibm-plex-sans-arabic/500.css";
+@import "@fontsource/ibm-plex-sans-arabic/600.css";
+@import "@fontsource/ibm-plex-sans-arabic/700.css";
+
+/* WASL design tokens — brand colours sampled from the approved logo (navy #0B2E52, teal #18BDB5). */
+@theme {
+  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --color-navy-950: #061d33;
+  --color-navy-900: #082b4c;
+  --color-navy-800: #0b2e52;
+  --color-navy-700: #13406a;
+  --color-navy-600: #1d5584;
+  --color-teal-700: #0a8b85;
+  --color-teal-600: #0ea69f;
+  --color-teal-500: #18bdb5;
+  --color-teal-100: #d5f4f1;
+  --color-teal-50: #eaf9f7;
+  --color-canvas: #f6f8fa;
+  --color-surface: #ffffff;
+  --color-ink: #142538;
+  --color-ink-2: #45586c;
+  --color-muted: #637487;
+  --color-line: #e2e8ee;
+  --color-line-2: #eef2f6;
+  --color-ok: #15803d;
+  --color-ok-bg: #e9f7ef;
+  --color-warn: #a16207;
+  --color-warn-bg: #fdf5e3;
+  --color-bad: #b42318;
+  --color-bad-bg: #fdecea;
+  --color-info: #1d5584;
+  --color-info-bg: #ebf2fa;
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgb(16 40 64 / 0.04), 0 4px 16px -8px rgb(16 40 64 / 0.08);
+}
+
+html, body { background: var(--color-canvas); color: var(--color-ink); }
+body { font-family: var(--font-sans); font-size: 14px; -webkit-font-smoothing: antialiased; }
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+:focus-visible { outline: 2px solid var(--color-teal-500); outline-offset: 2px; border-radius: 6px; }
+::selection { background: var(--color-teal-100); }
+.scroll-thin { scrollbar-width: thin; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .print-area { box-shadow: none !important; border: 0 !important; }
+}
