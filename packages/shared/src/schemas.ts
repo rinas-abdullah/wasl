@@ -177,10 +177,10 @@ export const planDecisionSchema = z.object({ reason: z.string().trim().max(500).
 
 export const simulationParamsSchema = z.object({
   durationMin: z.number().int().min(60).max(1440).default(600),
-  nTrucks: z.number().int().min(4).max(200).default(40),
+  nTrucks: z.number().int().min(4).max(200).default(36),
   nDocks: z.number().int().min(1).max(20).default(4),
-  nReeferDocks: z.number().int().min(0).max(20).default(1),
-  nTeams: z.number().int().min(1).max(20).default(3),
+  nReeferDocks: z.number().int().min(0).max(20).default(2),
+  nTeams: z.number().int().min(1).max(20).default(4),
   nInspectors: z.number().int().min(0).max(10).default(1),
   yardCapacity: z.number().int().min(1).max(200).default(8),
   arrival: z.object({
