@@ -166,7 +166,7 @@ test("visitors land directly in the platform (demo mode) and switch role from th
   await expect(page).not.toHaveURL(/\/login/);
   await page.getByRole("button", { name: "Switch role" }).click();
   await page.getByRole("menuitem", { name: "Dock supervisor" }).click();
-  await expect(page.getByText("Dock Supervisor (Demo)")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Account menu" })).toContainText("Dock Supervisor (Demo)");
   // Explicit sign-out goes to the login page and does not auto sign-in again
   await page.getByRole("button", { name: "Account menu" }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
