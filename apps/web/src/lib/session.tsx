@@ -37,11 +37,40 @@ async function loadSession(): Promise<Me> {
 }
 
 export function SessionProvider({ children, fallback }: { children: React.ReactNode; fallback: React.ReactNode }) {
-  const { data } = useQuery({ queryKey: ["me"], queryFn: loadSession, staleTime: 60_000, retry: false });
+  const q = useQuery({
+    queryKey: ["me"],
+    queryFn: loadSession,
+    staleTime: 60_000,
+    // The free API tier sleeps when idle and needs ~1 minute to wake: keep retrying on server/network errors.
+    retry: (n, err) => !(err instanceof ApiError && err.status > 0 && err.status < 500) && n < 20,
+    retryDelay: 3000,
+  });
+  const data = q.data;
   useEffect(() => {
     if (data) setCsrf(data.csrfToken);
   }, [data]);
-  if (!data) return <>{fallback}</>;
+  if (!data) {
+    if (q.isError) {
+      return (
+        <div className="grid min-h-screen place-items-center bg-canvas px-6 text-center">
+          <div>
+            <p className="text-sm font-medium text-ink">تعذر الاتصال بالخادم · Could not reach the server</p>
+            <button onClick={() => q.refetch()} className="mt-4 rounded-lg bg-navy-800 px-4 py-2 text-[13px] font-medium text-white">إعادة المحاولة · Retry</button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <>
+        {fallback}
+        {q.failureCount > 0 ? (
+          <p className="fixed inset-x-0 bottom-10 text-center text-[12px] text-muted">
+            الخادم يستيقظ من وضع السكون، قد يستغرق ذلك دقيقة… · Waking the server, this can take a minute… ({q.failureCount})
+          </p>
+        ) : null}
+      </>
+    );
+  }
   setCsrf(data.csrfToken);
   return <SessionCtx.Provider value={data}>{children}</SessionCtx.Provider>;
 }

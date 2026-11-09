@@ -4,6 +4,8 @@
  * image works on any host. Streams responses (Server-Sent Events included).
  */
 export const dynamic = "force-dynamic";
+// Allow time for a sleeping API instance to wake up.
+export const maxDuration = 60;
 
 const FORWARD_REQ = ["cookie", "content-type", "x-csrf-token", "idempotency-key", "user-agent", "accept", "x-request-id"];
 const FORWARD_RES = ["content-type", "content-disposition", "cache-control", "idempotent-replay", "x-accel-buffering"];
@@ -26,7 +28,12 @@ async function proxy(req: Request, ctx: { params: Promise<{ path: string[] }> })
   const fwd = req.headers.get("x-forwarded-for");
   if (fwd) headers.set("x-forwarded-for", fwd);
   const hasBody = !["GET", "HEAD"].includes(req.method);
-  const res = await fetch(target, { method: req.method, headers, body: hasBody ? await req.arrayBuffer() : undefined, redirect: "manual", cache: "no-store" });
+  let res: Response;
+  try {
+    res = await fetch(target, { method: req.method, headers, body: hasBody ? await req.arrayBuffer() : undefined, redirect: "manual", cache: "no-store" });
+  } catch {
+    return Response.json({ error: { code: "UPSTREAM_UNAVAILABLE", message: "API is unavailable (it may be waking up). Retry shortly." } }, { status: 502 });
+  }
   const out = new Headers();
   for (const h of FORWARD_RES) {
     const v = res.headers.get(h);
