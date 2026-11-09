@@ -23,7 +23,6 @@ Everything runs on **synthetic data**. Sensors are **100% virtual**. No real war
 ## Quick start (Docker)
 
 ```bash
-cd wasl
 docker compose -f infrastructure/docker-compose.yml up --build
 ```
 
@@ -36,7 +35,7 @@ See [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) for the 10-minute judge walkthrough
 Requirements: Node ≥ 20, Python ≥ 3.11, PostgreSQL 16.
 
 ```bash
-cd wasl && npm install
+npm install
 pip install -r services/intelligence/requirements-dev.txt
 cp apps/api/.env.example apps/api/.env            # set DATABASE_URL / DEMO_PASSWORD
 (cd services/intelligence && python -m wasl_intel.train && uvicorn wasl_intel.app:app --port 8000)

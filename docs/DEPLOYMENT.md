@@ -15,8 +15,7 @@ Behind a TLS-intercepting proxy, put the proxy's root CA (`*.crt`) into `infrast
 
 ## Render (one-click Blueprint)
 
-[`render.yaml`](../../render.yaml) at the repository root defines the whole stack: managed Postgres 16, `wasl-intelligence`, `wasl-api`, `wasl-web` (Docker, built from `./wasl`). Open
-<https://render.com/deploy?repo=https://github.com/rinas-abdullah/project-files/tree/claude/sleepy-brown-qbv0oi>, connect GitHub if asked, and click **Apply**. The web URL will be `https://wasl-web.onrender.com` (or a suffixed variant if that name is taken).
+[`render.yaml`](../render.yaml) at the repository root defines the whole stack: managed Postgres 16, `wasl-intelligence`, `wasl-api`, `wasl-web` (Docker). Open `https://render.com/deploy?repo=<your repository URL>`, connect GitHub if asked, and click **Apply**. The web URL will be `https://wasl-web.onrender.com` (or a suffixed variant if that name is taken).
 
 * Services reach each other over their public HTTPS hosts; the intelligence service only answers requests carrying the generated `INTELLIGENCE_API_KEY`.
 * The web app proxies `/api/*` to `API_INTERNAL_URL` **at runtime** (`apps/web/src/app/api/[...path]/route.ts`), so the same image works on any host.
@@ -40,3 +39,7 @@ None of these are assumed to be free. Production checklist: HTTPS + `COOKIE_SECU
 
 * API: `GET /api/health` → `{ status: ok|degraded|down, database, intelligence }` (degraded = intelligence unreachable; the API still works and falls back to declared planning tables for estimates, while optimisation/simulation jobs fail visibly).
 * Intelligence: `GET /health`.
+
+## Vercel (web only)
+
+Import the repository in Vercel with **Root Directory** `apps/web` and the environment variable `API_INTERNAL_URL` set to the public API URL (for example `https://wasl-api.onrender.com`). `apps/web/vercel.json` installs the workspace from the repository root. The API, intelligence service and database must run elsewhere (e.g. Render): Vercel does not host the long-running API worker or the Python solver.
