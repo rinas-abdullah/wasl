@@ -4,9 +4,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
-import { Bell, ChevronDown, FlaskConical, Globe, LogOut, Menu, RotateCcw, Search, X } from "lucide-react";
+import { Bell, Check, ChevronDown, FlaskConical, Globe, LogIn, LogOut, Menu, RotateCcw, Search, UserCog, X } from "lucide-react";
+import { ROLE_PERMISSIONS, type Role } from "@wasl/shared";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, NO_AUTO_DEMO_KEY, type DemoAccount } from "@/lib/api";
 import { setLocale, useLocale, useT } from "@/lib/i18n";
 import { label } from "@/lib/labels";
 import { useLiveUpdates } from "@/lib/live";
@@ -37,7 +38,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const current = ALL_NAV.find((n) => path === n.href || path.startsWith(n.href + "/"));
   const group = NAV.find((g) => g.items.includes(current!));
 
+  const demoAccounts = useQuery({ queryKey: ["demo-accounts"], queryFn: () => api.get<DemoAccount[]>("/api/auth/demo-accounts"), enabled: session.demoMode, staleTime: 600_000 });
+  const [switching, setSwitching] = useState<string | null>(null);
+  async function switchRole(a: DemoAccount) {
+    if (a.email === session.user.email) return;
+    setSwitching(a.email);
+    try {
+      await api.post("/api/auth/demo-login", { email: a.email });
+      qc.clear();
+      window.location.href = ROLE_PERMISSIONS[a.role as Role]?.includes("dashboard:read") ? "/overview" : "/trucks";
+    } catch (e) {
+      toast.error((e as Error).message);
+      setSwitching(null);
+    }
+  }
+
   async function logout() {
+    try {
+      sessionStorage.setItem(NO_AUTO_DEMO_KEY, "1");
+    } catch {
+      /* storage unavailable */
+    }
     await api.post("/api/auth/logout").catch(() => undefined);
     qc.clear();
     window.location.href = "/login";
@@ -165,6 +186,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {facilities.data!.map((f) => <option key={f.id} value={f.id}>{locale === "ar" ? f.nameAr : f.name}</option>)}
             </select>
           ) : null}
+          {session.demoMode && (demoAccounts.data?.length ?? 0) > 0 ? (
+            <Dropdown.Root>
+              <Dropdown.Trigger asChild>
+                <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-[12.5px] font-medium text-ink-2 hover:border-teal-500" aria-label={t("تبديل الدور", "Switch role")}>
+                  <UserCog className="size-4 text-teal-600" />
+                  <span className="hidden sm:inline">{t("تبديل الدور", "Switch role")}</span>
+                  <ChevronDown className="size-3.5 text-muted" />
+                </button>
+              </Dropdown.Trigger>
+              <Dropdown.Portal>
+                <Dropdown.Content align="end" sideOffset={6} className="z-50 w-64 rounded-xl border border-line bg-surface p-1.5 shadow-xl">
+                  <p className="px-2.5 py-1.5 text-[11px] text-muted">{t("جرّب المنصة بأي دور — بيانات اصطناعية", "Try the platform as any role — synthetic data")}</p>
+                  {demoAccounts.data!.map((a) => (
+                    <Dropdown.Item key={a.email} onSelect={(e) => { e.preventDefault(); void switchRole(a); }} className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-[13px] text-ink outline-none data-[highlighted]:bg-canvas">
+                      <span>{label("role", a.role, locale)}</span>
+                      {a.email === session.user.email ? <Check className="size-4 text-teal-600" /> : switching === a.email ? <span className="size-3.5 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" /> : null}
+                    </Dropdown.Item>
+                  ))}
+                  <Dropdown.Separator className="my-1 h-px bg-line-2" />
+                  <Dropdown.Item onSelect={() => (window.location.href = "/login")} className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] text-ink-2 outline-none data-[highlighted]:bg-canvas">
+                    <LogIn className="size-4" />
+                    {t("تسجيل الدخول بالبريد الإلكتروني", "Sign in with email")}
+                  </Dropdown.Item>
+                </Dropdown.Content>
+              </Dropdown.Portal>
+            </Dropdown.Root>
+          ) : null}
           <button onClick={() => setLocale(locale === "ar" ? "en" : "ar")} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-medium text-ink-2 hover:bg-line-2" aria-label={t("تغيير اللغة", "Change language")}>
             <Globe className="size-4" />
             {locale === "ar" ? "English" : "العربية"}
@@ -194,6 +242,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <p className="mt-1 text-muted">{label("role", session.role, locale)} · {locale === "ar" ? session.organization.nameAr : session.organization.name}</p>
                 </div>
                 <Dropdown.Separator className="my-1 h-px bg-line-2" />
+                <Dropdown.Item onSelect={() => (window.location.href = "/login")} className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] text-ink-2 outline-none data-[highlighted]:bg-canvas">
+                  <LogIn className="size-4" />
+                  {t("الدخول بحساب آخر", "Sign in with another account")}
+                </Dropdown.Item>
                 <Dropdown.Item onSelect={logout} className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] text-bad outline-none data-[highlighted]:bg-bad-bg">
                   <LogOut className="size-4" />
                   {t("تسجيل الخروج", "Sign out")}

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Globe, LogIn, ShieldCheck } from "lucide-react";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, NO_AUTO_DEMO_KEY } from "@/lib/api";
 import { setLocale, useLocale, useT } from "@/lib/i18n";
 import { label } from "@/lib/labels";
 import { Button, Field, Input } from "@/components/ui";
@@ -28,6 +28,11 @@ function LoginInner() {
   const { register, handleSubmit, formState } = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "", remember: false } });
 
   async function afterLogin() {
+    try {
+      sessionStorage.removeItem(NO_AUTO_DEMO_KEY);
+    } catch {
+      /* storage unavailable */
+    }
     const next = params.get("next");
       const me = await api.get<{ permissions: string[] }>("/api/auth/me");
       const fallback = me.permissions.includes("dashboard:read") ? "/overview" : "/trucks";

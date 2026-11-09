@@ -24,7 +24,7 @@ export interface Me {
   demoMode: boolean;
 }
 
-async function request<T>(method: string, path: string, body?: unknown, opts: { idempotencyKey?: string; allowStatus?: number[] } = {}): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, opts: { idempotencyKey?: string; allowStatus?: number[]; noAuthRedirect?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["content-type"] = "application/json";
   if (method !== "GET" && csrfToken) headers["x-csrf-token"] = csrfToken;
@@ -33,7 +33,7 @@ async function request<T>(method: string, path: string, body?: unknown, opts: { 
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok && !opts.allowStatus?.includes(res.status)) {
-    if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/api/auth/login")) {
+    if (res.status === 401 && typeof window !== "undefined" && !opts.noAuthRedirect && !path.startsWith("/api/auth/login")) {
       window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
     }
     const err = data?.error ?? {};
@@ -43,8 +43,8 @@ async function request<T>(method: string, path: string, body?: unknown, opts: { 
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>("GET", path),
-  post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string; allowStatus?: number[] }) => request<T>("POST", path, body ?? {}, opts),
+  get: <T>(path: string, opts?: { noAuthRedirect?: boolean }) => request<T>("GET", path, undefined, opts),
+  post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string; allowStatus?: number[]; noAuthRedirect?: boolean }) => request<T>("POST", path, body ?? {}, opts),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body ?? {}),
 };
 
@@ -62,3 +62,7 @@ export function qs(params: Record<string, unknown>) {
 export function newIdempotencyKey() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
+
+/** Set when the user explicitly signs out, so the demo auto sign-in does not immediately sign them back in. */
+export const NO_AUTO_DEMO_KEY = "wasl.noAutoDemo";
+export interface DemoAccount { email: string; name: string; role: string }

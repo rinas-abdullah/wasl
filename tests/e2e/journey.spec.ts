@@ -156,3 +156,21 @@ test("role-based UI and server enforcement for a carrier operator (no facility-w
   const r = await apiPost(page, "/api/optimization/runs", {});
   expect(r.status).toBe(403);
 });
+
+test("visitors land directly in the platform (demo mode) and switch role from the top bar", async ({ page }) => {
+  await page.goto("about:blank");
+  await page.context().clearCookies();
+  await page.context().addCookies([{ name: "wasl_locale", value: "en", domain: "localhost", path: "/" }]);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Operational overview" })).toBeVisible({ timeout: 60_000 });
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.getByRole("button", { name: "Switch role" }).click();
+  await page.getByRole("menuitem", { name: "Dock supervisor" }).click();
+  await expect(page.getByText("Dock Supervisor (Demo)")).toBeVisible();
+  // Explicit sign-out goes to the login page and does not auto sign-in again
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
+  await page.waitForURL(/\/login/);
+  await page.goto("/overview");
+  await page.waitForURL(/\/login/);
+});
