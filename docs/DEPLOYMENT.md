@@ -43,3 +43,15 @@ None of these are assumed to be free. Production checklist: HTTPS + `COOKIE_SECU
 ## Vercel (web only)
 
 Import the repository in Vercel with **Root Directory** `apps/web` and the environment variable `API_INTERNAL_URL` set to the public API URL (for example `https://wasl-api.onrender.com`). `apps/web/vercel.json` installs the workspace from the repository root. The API, intelligence service and database must run elsewhere (e.g. Render): Vercel does not host the long-running API worker or the Python solver.
+
+## Railway (API + intelligence + Postgres; web on Vercel)
+
+Railway keeps services running (no sleep on paid usage). Config files: `infrastructure/railway/api.json`, `infrastructure/railway/intelligence.json`.
+
+1. New Project → **Deploy from GitHub repo** → `wasl` (creates one service) and **+ New → Database → PostgreSQL**.
+2. Service **intelligence**: Settings → *Config-as-code* path `infrastructure/railway/intelligence.json`; Variables `PORT=8000`, `WEB_CONCURRENCY=1`, `INTELLIGENCE_API_KEY=<random string>`; Networking → *Generate Domain*.
+3. Service **api** (+ New → GitHub repo → `wasl` again): config path `infrastructure/railway/api.json`; Variables:
+   `PORT=4000`, `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `INTELLIGENCE_URL=${{intelligence.RAILWAY_PUBLIC_DOMAIN}}`, `INTELLIGENCE_API_KEY=${{intelligence.INTELLIGENCE_API_KEY}}`, `DEMO_MODE=true`, `SEED_DEMO_ON_START=true`, `DEMO_PASSWORD=Wasl@Demo2026`, `COOKIE_SECURE=true`, `APP_PUBLIC_URL=https://<your vercel domain>`; Networking → *Generate Domain*.
+4. Vercel → project → Settings → Environment Variables: `API_INTERNAL_URL=https://<api railway domain>` → Redeploy.
+
+`INTELLIGENCE_URL` may be a bare host name (HTTPS is assumed) or `host:port` (plain HTTP, e.g. a private network address).
